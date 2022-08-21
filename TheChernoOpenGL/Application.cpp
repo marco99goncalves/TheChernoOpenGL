@@ -5,6 +5,8 @@
 #include <string>
 #include <sstream>
 
+void GetFPS(int& frameCount, double& previousTime);
+
 #define ASSERT(x) if (!(x)) __debugbreak();
 #define GLCall(x) GLClearError();\
     x;\
@@ -119,6 +121,8 @@ int main(void)
     /* Make the window's context current */
     glfwMakeContextCurrent(window);
 
+    glfwSwapInterval(0);
+
     if (glewInit() != GLEW_OK) {
         std::cerr << "[ERROR] Error initializing GLEW\n";
         return -1;
@@ -155,12 +159,50 @@ int main(void)
     unsigned int shader = CreateShader(source.VertexSource, source.FragmentSource);
     glUseProgram(shader);
 
+    GLCall(int location = glGetUniformLocation(shader, "u_Color"));
+    ASSERT(location != -1);
+    GLCall(glUniform4f(location, 0.5f, 0.3f, 0.8f, 1.0f));
+    
+    float r = 0.0f;
+    float r_increment = 0.05f;
+
+    float g = 0.0f;
+    float g_increment = 0.01f;
+
+    float b = 1.0f;
+    float b_increment = 0.3f;
+
+    double previousTime = glfwGetTime();
+    int frameCount = 0;
     /* Loop until the user closes the window */
     while (!glfwWindowShouldClose(window))
     {
+        GetFPS(frameCount, previousTime);
+
+
         /* Render here */
         glClear(GL_COLOR_BUFFER_BIT);
 
+        if (r > 1.0f)
+            r_increment = -0.05f;
+        else if (r < 0.0f)
+            r_increment = 0.05f;
+
+        if (g > 1.0f)
+            g_increment = -0.01f;
+        else if (g < 0.0f)
+            g_increment = 0.01f;
+
+        if (b > 1.0f)
+            b_increment = -0.03f;
+        else if (b < 0.0f)
+            b_increment = 0.03f;
+        
+        r += r_increment;
+        g += g_increment;
+        b += b_increment;
+
+        GLCall(glUniform4f(location, r, g, b, 1.0f));
         GLCall(glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr));
 
         /* Swap front and back buffers */
@@ -174,4 +216,18 @@ int main(void)
 
     glfwTerminate();
     return 0;
+}
+void GetFPS(int &frameCount, double &previousTime) {
+    // Measure speed
+    double currentTime = glfwGetTime();
+    frameCount++;
+    // If a second has passed.
+    if (currentTime - previousTime >= 1.0)
+    {
+        // Display the frame count here any way you want.
+        std::cout << "FPS: " << frameCount << std::endl;
+
+        frameCount = 0;
+        previousTime = currentTime;
+    }
 }
